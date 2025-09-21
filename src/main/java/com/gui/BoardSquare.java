@@ -5,11 +5,14 @@ import java.awt.*;
 
 abstract public class BoardSquare extends JPanel {
 
-    static protected Font textFont = new Font("Serif", Font.BOLD, 25);
+    static protected Font getTextFont(int height) {
+        return new Font("Serif", Font.BOLD, (int)(height * 0.75) );
+    }
 
-    public BoardSquare(int x, int y) {
-        this.setBounds(x, y, 39, 39);
+    public BoardSquare(int x, int y, int width, int height) {
+        this.setBounds(x, y, width, height);
         this.setBackground(Color.white);
+        this.setLayout(null);
         this.setBorder(BorderFactory.createLineBorder(Color.black, 1));
     }
 

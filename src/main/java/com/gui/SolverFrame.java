@@ -1,8 +1,8 @@
 package main.java.com.gui;
 
-import main.java.com.model.Puzzle;
-import main.java.com.model.SudokuBoard;
+import main.java.com.model.*;
 import main.java.com.structs.PuzzleNavigator;
+import main.java.com.utils.BoardPanelFactory;
 import main.java.com.utils.LoadDataJson;
 import main.java.com.utils.OutputDataJson;
 
@@ -10,57 +10,88 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
+
+/**
+TODO:
+ * #Done Implement switching puzzle types and subtypes.
+ * #Done Fix Loading Logic.
+ * Improve Visuals Using 2D Graphics.
+ * Make GRID25x25 usable.
+ * Add additional Puzzles.
+ * Optimize Sudoku solving logic.
+ */
 
 public class SolverFrame extends JFrame implements ActionListener {
 
-    Puzzle activePuzzle;
-    PuzzleNavigator<Puzzle> puzzleHistory;
+    private final int userPanelY = 175;
+    private final int outputPanelY = 175;
+    private final int userPanelX = 20;
+    private final int outputPanelX = 500;
+
+    private Puzzle activePuzzle;
+    private PuzzleNavigator<Puzzle> puzzleHistory;
+    private JLayeredPane layeredPane;
     private BoardPanel userPanel;
     private BoardPanel outputPanel;
     private ImageIcon icon;
-    JPanel headerPanel;
-    JButton verifyButton;
-    JButton solveButton;
-    JButton clearButton;
-    JButton leftButton;
-    JButton rightButton;
-    JLabel valid;
-    JLabel invalid;
+    private JPanel headerPanel;
+    private JPanel background;
+    private JButton verifyButton;
+    private JButton solveButton;
+    private JButton clearButton;
+    private JButton leftButton;
+    private JButton rightButton;
+    private JComboBox puzzleTypeSelector;
+    private JComboBox boardTypeSelector;
+    private JLabel valid;
+    private JLabel invalid;
 
+    private PuzzleType puzzleType;
+    private BoardType boardType;
+
+    private BoardType[] boardTypes;
+    private final PuzzleType[] puzzleTypes = Puzzle.getValidPuzzleTypes();
 
 
     public SolverFrame() {
+        layeredPane = this.getLayeredPane();
         puzzleHistory = LoadDataJson.puzzles();
         frameSetup();
-        headerSetup();
+        backgroundSetup();
         validSetup();
-        userPanel = new BoardPanel(20, 175, true);
-        outputPanel = new BoardPanel(500, 175, false);
-        this.add(headerPanel);
-        this.add(userPanel);
-        this.add(outputPanel);
-        this.revalidate();
-        this.repaint();
-        this.setVisible(true);
 
         if (puzzleHistory.getCurrentValue() != null) {
             activePuzzle = new Puzzle(puzzleHistory.getCurrentValue());
+            puzzleType = activePuzzle.getPuzzleType();
+            boardType = activePuzzle.getBoardType();
+            userPanel = BoardPanelFactory.createBoardPanel(puzzleType, boardType, userPanelX, userPanelY, true);
             userPanel.updateBoard(activePuzzle.getInitialBoard());
-            outputPanel.clearSquares();
-            setDirectionButtons();
+            outputPanel = BoardPanelFactory.createBoardPanel(puzzleType, boardType, outputPanelX, outputPanelY, false);
+            boardTypes = Puzzle.getValidBoardTypes(activePuzzle.getPuzzleType());
+        } else {
+            puzzleType = PuzzleType.SUDOKU;
+            boardType = BoardType.GRID_4x4;
+            userPanel = BoardPanelFactory.createBoardPanel(puzzleType, boardType, userPanelX, userPanelY, true);
+            outputPanel = BoardPanelFactory.createBoardPanel(puzzleType, boardType, outputPanelX, outputPanelY, false);
         }
+        headerSetup();
 
+        layeredPane.add(headerPanel, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(userPanel, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(outputPanel, JLayeredPane.PALETTE_LAYER);
+        this.revalidate();
+        this.repaint();
+        setDirectionButtons();
+        this.setVisible(true);
     }
 
     private void headerSetup() {
         headerPanel = new JPanel();
         headerPanel.setBackground(new Color(30,30,30));
         headerPanel.setBounds(0, 0, 960, 75);
-        headerPanel.setLayout(new BorderLayout());
         headerPanel.setLayout(null);
 
-        JLabel header = new JLabel("Sudoku Solver V1.0");
+        JLabel header = new JLabel("Puzzle Solver V2.0");
         header.setForeground(Color.white);
         header.setFont(new Font("Monotype Corsiva", Font.PLAIN, 20));
         header.setBounds(400,0,160,30);
@@ -95,23 +126,64 @@ public class SolverFrame extends JFrame implements ActionListener {
         rightButton.addActionListener(this);
         rightButton.setFocusable(false);
         headerPanel.add(rightButton);
+
+        puzzleTypeSelector = new JComboBox();
+        puzzleTypeSelector.setBounds(720, 10, 125, 25);
+        puzzleTypeSelector.setFocusable(false);
+        for (PuzzleType type : puzzleTypes) {
+            puzzleTypeSelector.addItem(type.toString());
+        }
+        headerPanel.add(puzzleTypeSelector);
+
+        boardTypeSelector = new JComboBox();
+        boardTypeSelector.setBounds(720, 40, 125, 25);
+        boardTypeSelector.setFocusable(false);
+        for (BoardType type : boardTypes) {
+            boardTypeSelector.addItem(type.toString());
+        }
+        headerPanel.add(boardTypeSelector);
+
+        puzzleTypeSelector.addActionListener(this);
+        boardTypeSelector.addActionListener(this);
+    }
+
+    private void backgroundSetup() {
+
+        background = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                int squareSize = 96;
+                for (int y = 0; y < getHeight(); y += squareSize) {
+                    for (int x = 0; x < getWidth(); x += squareSize) {
+                        if ((x / squareSize + y / squareSize) % 2 == 0) {
+                            g.setColor(new Color(60, 40, 160));
+                        } else {
+                            g.setColor(new Color(45, 30, 120));
+                        }
+                        g.fillRect(x, y, squareSize, squareSize);
+                    }
+                }
+            }
+        };
+        background.setBounds(0, 0, 970, 700);
+        layeredPane.add(background, JLayeredPane.DEFAULT_LAYER);
     }
 
     private void frameSetup() {
-        ImageIcon icon = new ImageIcon("src/main/resources/icons/SudokuIcon.jpg");
-        this.getContentPane().setBackground(new Color(0x913b1C));
+        ImageIcon icon = new ImageIcon("src/main/resources/icons/PuzzlePiece.png");
         this.setIconImage(icon.getImage());
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setResizable(false);
         this.setLayout(null);
-        this.setTitle("Sudoku Solver");
+        this.setTitle("Puzzle Solver");
         this.setSize(970, 700);
     }
 
     private void validSetup() {
-        ImageIcon validIcon = new ImageIcon("src/main/resources/icons/Valid.jpg");
+        ImageIcon validIcon = new ImageIcon("src/main/resources/icons/Valid.png");
         validIcon = new ImageIcon(validIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH));
-        ImageIcon invalidIcon = new ImageIcon("src/main/resources/icons/Invalid.jpg");
+        ImageIcon invalidIcon = new ImageIcon("src/main/resources/icons/Invalid.png");
         invalidIcon = new ImageIcon(invalidIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH));
         valid = new JLabel("Valid!");
         valid.setFont(new Font("Algerian", Font.BOLD, 30));
@@ -131,8 +203,8 @@ public class SolverFrame extends JFrame implements ActionListener {
         invalid.setIcon(invalidIcon);
         invalid.setVisible(false);
         valid.setVisible(false);
-        this.add(valid);
-        this.add(invalid);
+        layeredPane.add(valid, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(invalid, JLayeredPane.PALETTE_LAYER);
     }
 
 
@@ -148,12 +220,16 @@ public class SolverFrame extends JFrame implements ActionListener {
             setPreviousPuzzle();
         } else if (e.getSource() == rightButton) {
             setNextPuzzle();
+        } else if (e.getSource() == puzzleTypeSelector) {
+            setUserPuzzleType();
+        } else if (e.getSource() == boardTypeSelector) {
+            setUserBoardType();
         }
     }
 
     private void verifyUserBoard() {
-        activePuzzle = new Puzzle(userPanel.getBoard());
-        saveCurrentBoard();
+        activePuzzle = new Puzzle(puzzleType, boardType, userPanel.getBoard().getBoard());
+        saveCurrentPuzzle();
         setDirectionButtons();
         if (activePuzzle.isSolution()) {
             invalid.setVisible(false);
@@ -167,9 +243,9 @@ public class SolverFrame extends JFrame implements ActionListener {
     private void solveUserBoard() {
         valid.setVisible(false);
         invalid.setVisible(false);
-        activePuzzle = new Puzzle(userPanel.getBoard());
-        saveCurrentBoard();
-        SudokuBoard solvedBoard;
+        activePuzzle = new Puzzle(puzzleType, boardType, userPanel.getBoard().getBoard());
+        saveCurrentPuzzle();
+        PuzzleBoard solvedBoard;
         if ((solvedBoard = activePuzzle.getSolvedBoard()) == null) {
             invalid.setVisible(true);
         } else {
@@ -183,19 +259,41 @@ public class SolverFrame extends JFrame implements ActionListener {
     }
 
     private void setPreviousPuzzle() {
+        valid.setVisible(false);
+        invalid.setVisible(false);
         if (!puzzleHistory.hasOlderValue()) {return;}
         activePuzzle = new Puzzle(puzzleHistory.getOlderValue());
+        puzzleType = activePuzzle.getPuzzleType();
+        boardType = activePuzzle.getBoardType();
+        makeNewBoardPanels();
         userPanel.updateBoard(activePuzzle.getInitialBoard());
-        outputPanel.clearSquares();
+        if (activePuzzle.hasSolvedBoard()) {
+            outputPanel.updateBoard(activePuzzle.getSolvedBoard());
+        } else {
+            outputPanel.clearSquares();
+        }
         setDirectionButtons();
+        this.revalidate();
+        this.repaint();
     }
 
     private void setNextPuzzle() {
+        valid.setVisible(false);
+        invalid.setVisible(false);
         if (!puzzleHistory.hasNewerValue()) {return;}
         activePuzzle = new Puzzle(puzzleHistory.getNewerValue());
+        puzzleType = activePuzzle.getPuzzleType();
+        boardType = activePuzzle.getBoardType();
+        makeNewBoardPanels();
         userPanel.updateBoard(activePuzzle.getInitialBoard());
-        outputPanel.clearSquares();
+        if (activePuzzle.hasSolvedBoard()) {
+            outputPanel.updateBoard(activePuzzle.getSolvedBoard());
+        } else {
+            outputPanel.clearSquares();
+        }
         setDirectionButtons();
+        this.revalidate();
+        this.repaint();
     }
 
     private void setDirectionButtons() {
@@ -203,10 +301,41 @@ public class SolverFrame extends JFrame implements ActionListener {
         leftButton.setEnabled(puzzleHistory.hasOlderValue());
     }
 
-    private void saveCurrentBoard() {
+    private void makeNewBoardPanels() {
+        layeredPane.remove(userPanel);
+        layeredPane.remove(outputPanel);
+        userPanel = BoardPanelFactory.createBoardPanel(puzzleType, boardType, userPanelX, userPanelY, true);
+        outputPanel = BoardPanelFactory.createBoardPanel(puzzleType, boardType, outputPanelX, outputPanelY, false);
+        layeredPane.add(userPanel, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(outputPanel, JLayeredPane.PALETTE_LAYER);
+        revalidate();
+        repaint();
+    }
+
+    private void saveCurrentPuzzle() {
         puzzleHistory.add(new Puzzle(activePuzzle));
         puzzleHistory.getNewestValue();
         OutputDataJson.puzzle(activePuzzle);
         setDirectionButtons();
+    }
+
+    private void setUserPuzzleType() {
+        valid.setVisible(false);
+        invalid.setVisible(false);
+        puzzleType = puzzleTypes[puzzleTypeSelector.getSelectedIndex()];
+        boardTypes = Puzzle.getValidBoardTypes(puzzleType);
+        boardType = boardTypes[0];
+        boardTypeSelector.removeAll();
+        for (BoardType boardtype : boardTypes) {
+            boardTypeSelector.addItem(boardtype.toString());
+        }
+        makeNewBoardPanels();
+    }
+
+    private void setUserBoardType() {
+        valid.setVisible(false);
+        invalid.setVisible(false);
+        boardType = boardTypes[boardTypeSelector.getSelectedIndex()];
+        makeNewBoardPanels();
     }
 }

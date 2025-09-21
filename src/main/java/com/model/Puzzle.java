@@ -1,40 +1,53 @@
 package main.java.com.model;
 
+import main.java.com.utils.PuzzleBoardFactory;
+
 public class Puzzle {
-    private final SudokuBoard initialBoard;
-    private SudokuBoard solvedBoard;
+
+    private PuzzleBoard initialBoard;
+    private PuzzleBoard solvedBoard;
     private Boolean solvable;
 
-    public Puzzle(char[][] board) {
-        this.initialBoard = new SudokuBoard(board);
+    protected BoardType boardType;
+    protected PuzzleType puzzleType;
+
+    public PuzzleType getPuzzleType() {
+        return this.puzzleType;
+    }
+    public BoardType getBoardType() {
+        return this.boardType;
+    }
+
+    public Puzzle(PuzzleType puzzleType, BoardType boardType, char[][] board) {
+        this.puzzleType = puzzleType;
+        this.boardType = boardType;
+        this.initialBoard = PuzzleBoardFactory.createBoard(puzzleType, boardType, board);
         this.solvedBoard = null;
         this.solvable = null;
     }
 
-    public Puzzle(char[][] initialBoard, char[][] solvedBoard) {
-        this.initialBoard = new SudokuBoard(initialBoard);
-        this.solvedBoard = new SudokuBoard(solvedBoard);
-        this.solvable = null;
-    }
-
-    public Puzzle(SudokuBoard board) {
-        this.initialBoard = new SudokuBoard(board);
-        this.solvedBoard = null;
+    public Puzzle(PuzzleType puzzleType, BoardType boardType, char[][] initialBoard, char[][] solvedBoard) {
+        this.puzzleType = puzzleType;
+        this.boardType = boardType;
+        this.initialBoard = PuzzleBoardFactory.createBoard(puzzleType, boardType, initialBoard);
+        this.solvedBoard = PuzzleBoardFactory.createBoard(puzzleType, boardType, solvedBoard);
         this.solvable = null;
     }
 
     public Puzzle(Puzzle puzz) {
-        this.initialBoard = new SudokuBoard(puzz.getInitialBoard());
+        this.puzzleType = puzz.puzzleType;
+        this.boardType = puzz.boardType;
+        this.initialBoard = PuzzleBoardFactory.createBoard(this.puzzleType, this.boardType, puzz.initialBoard.getBoard());
         this.solvable = puzz.solvable;
-        if (this.solvable != null && this.solvable == true) {
-            this.solvedBoard = puzz.getSolvedBoard();
+        if (this.solvable != null && this.solvable) {
+            this.solvedBoard = PuzzleBoardFactory.createBoard(puzzleType, boardType, puzz.solvedBoard.getBoard());
         } else {
             this.solvedBoard = null;
         }
     }
 
-    public SudokuBoard getInitialBoard() {
-        return this.initialBoard;
+    public PuzzleBoard getInitialBoard() {
+        return PuzzleBoardFactory.createBoard(puzzleType, boardType, initialBoard.getBoard());
     }
 
     /**
@@ -52,19 +65,19 @@ public class Puzzle {
      * Returns a solved board given the input board.
      * @return = Returns null if the board was unable to be solved.
      */
-    public SudokuBoard getSolvedBoard() {
+    public PuzzleBoard getSolvedBoard() {
         if (this.solvedBoard != null) {
-            return new SudokuBoard(this.solvedBoard);
+            return PuzzleBoardFactory.createBoard(puzzleType, boardType, solvedBoard.getBoard());
         }
         if (!this.isSolvable()) {
             return null;
         }
-        SudokuBoard solvingBoard = new SudokuBoard(initialBoard);
+        PuzzleBoard solvingBoard = PuzzleBoardFactory.createBoard(puzzleType, boardType, initialBoard.getBoard());
         if (!solvingBoard.solveBoard()) {
             return null;
         }
         this.solvedBoard = solvingBoard;
-        return new SudokuBoard(this.solvedBoard);
+        return PuzzleBoardFactory.createBoard(puzzleType, boardType, solvedBoard.getBoard());
     }
 
     /**
@@ -79,5 +92,32 @@ public class Puzzle {
         return solvedBoard != null;
     }
 
+    static public BoardType[] getValidBoardTypes(PuzzleType puzzleType) {
+        return switch (puzzleType) {
+            case SUDOKU -> new BoardType[] {
+                    BoardType.GRID_4x4,
+                    BoardType.GRID_9x9,
+                    BoardType.GRID_16x16,
+                    BoardType.GRID_25x25
+            };
+            // TODO: ADD ADDITIONAL PUZZLE TYPES.
+            default -> throw new IllegalStateException("Invalid PuzzleType argument");
+        };
 
+    }
+
+    static public PuzzleType[] getValidPuzzleTypes() {
+        return new PuzzleType[] {
+                PuzzleType.SUDOKU,
+                PuzzleType.FLOW
+        };
+    }
+
+    public void setInitialBoard(PuzzleBoard board) {
+        this.initialBoard = board;
+    }
+
+    public void setSolvedBoard(PuzzleBoard board) {
+        this.solvedBoard = board;
+    }
 }

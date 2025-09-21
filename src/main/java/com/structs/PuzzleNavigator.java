@@ -69,6 +69,11 @@ public class PuzzleNavigator <T>{
 
     }
 
+    /**
+     * Returns the current value if one exists or null if
+     * the PuzzleNavigator is empty.
+     * @return
+     */
     public T getCurrentValue() {
         if (numValues == 0) {return null;}
         return values[location];

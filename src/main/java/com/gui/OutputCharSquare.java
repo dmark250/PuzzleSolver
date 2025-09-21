@@ -3,14 +3,17 @@ package main.java.com.gui;
 import javax.swing.*;
 import java.awt.*;
 
-public class OutputSquare extends BoardSquare{
+public class OutputCharSquare extends BoardSquare{
 
     JLabel outputText;
 
-    public OutputSquare(int x, int y) {
-        super(x, y);
-        this.outputText = new JLabel("B");
-        this.outputText.setFont(BoardSquare.textFont);
+    public OutputCharSquare(int x, int y, int width, int height) {
+        super(x, y, width, height);
+        this.outputText = new JLabel("");
+        outputText.setBounds(0, 0, width, height);
+        outputText.setVerticalAlignment(JLabel.CENTER);
+        outputText.setHorizontalAlignment(JLabel.CENTER);
+        this.outputText.setFont(getTextFont(height));
         this.outputText.setForeground(Color.black);
         this.add(outputText);
         this.revalidate();
@@ -22,11 +25,7 @@ public class OutputSquare extends BoardSquare{
         if (this.outputText.getText().isBlank()) {
             return '.';
         }
-        char returnChar = this.outputText.getText().charAt(0);
-        if (returnChar > '9' || returnChar < '1') {
-            return '.';
-        }
-        return returnChar;
+        return this.outputText.getText().charAt(0);
     }
 
     @Override
