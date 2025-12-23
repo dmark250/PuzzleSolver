@@ -2,7 +2,7 @@
 
 ## Author - DMark
 
-### email - markjdevin@gmail.com
+### Email - markjdevin@gmail.com
 
 This project is a simple puzzle solving application. Currently, the only implemented puzzle to solve is a Sudoku puzzle, but it has been abstracted to support various types of puzzle like Flow puzzles.
 
