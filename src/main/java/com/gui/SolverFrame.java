@@ -16,9 +16,10 @@ TODO:
  * #Done Implement switching puzzle types and subtypes.
  * #Done Fix Loading Logic.
  * Improve Visuals Using 2D Graphics.
- * Make GRID25x25 usable.
+ * Make GRID25x25 visually usable.
  * Add additional Puzzles.
  * Optimize Sudoku solving logic.
+ * #Done Ensure boardTypeSelector removes old options on puzzleTypeSelector change.
  */
 
 public class SolverFrame extends JFrame implements ActionListener {
@@ -325,9 +326,12 @@ public class SolverFrame extends JFrame implements ActionListener {
         puzzleType = puzzleTypes[puzzleTypeSelector.getSelectedIndex()];
         boardTypes = Puzzle.getValidBoardTypes(puzzleType);
         boardType = boardTypes[0];
-        boardTypeSelector.removeAll();
+        boardTypeSelector.removeAllItems();
         for (BoardType boardtype : boardTypes) {
             boardTypeSelector.addItem(boardtype.toString());
+        }
+        if (puzzleType.equals(PuzzleType.SUDOKU)) {
+            boardTypeSelector.setSelectedIndex(1);
         }
         makeNewBoardPanels();
     }
@@ -335,7 +339,9 @@ public class SolverFrame extends JFrame implements ActionListener {
     private void setUserBoardType() {
         valid.setVisible(false);
         invalid.setVisible(false);
-        boardType = boardTypes[boardTypeSelector.getSelectedIndex()];
-        makeNewBoardPanels();
+        if (boardTypeSelector.getItemCount() != 0) {
+            boardType = boardTypes[boardTypeSelector.getSelectedIndex()];
+            makeNewBoardPanels();
+        }
     }
 }
